@@ -64,6 +64,11 @@ class EventHandler(object):
         manager.register('next_page',
             ['Page_Down', 'KP_Page_Down'],
             self._flip_page, kwargs={'number_of_pages': 1})
+
+        manager.register('delete_page',
+            ['<Shift>d'],
+            self._delete_page)
+
         manager.register('previous_page_singlestep',
             ['<Ctrl>Page_Up', '<Ctrl>KP_Page_Up', '<Ctrl>BackSpace'],
             self._flip_page, kwargs={'number_of_pages': -1, 'single_step': True})
@@ -732,6 +737,11 @@ class EventHandler(object):
         the page count will be advanced by only one page even in double page mode. """
         self._extra_scroll_events = 0
         self._window.flip_page(number_of_pages, single_step=single_step)
+
+    def _delete_page(self):
+        """ Switches a number of pages forwards/backwards. If C{single_step} is True,
+        the page count will be advanced by only one page even in double page mode. """
+        self._window.delete_current_page()
 
     def _left_right_page_progress(self, number_of_pages=1):
         """ If number_of_pages is positive, this function advances the specified

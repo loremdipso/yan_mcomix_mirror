@@ -400,6 +400,12 @@ class FileHandler(object):
             current_index = 0
         return current_index + 1, len(file_list)
 
+
+    def get_current_file(self):
+		return self._current_file
+
+
+
     def get_number_of_comments(self):
         """Return the number of comments in the current archive."""
         return len(self._comment_files)

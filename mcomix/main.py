@@ -4,6 +4,7 @@ import os
 import shutil
 import threading
 import gtk
+import re
 import gobject
 
 from mcomix import constants
@@ -650,6 +651,20 @@ class MainWindow(gtk.Window):
             prefs['auto open next directory'] and \
             (not archive_open or prefs['auto open next archive']):
             self.filehandler.open_previous_directory()
+
+
+    def delete_current_page(self):
+		if not self.filehandler.file_loaded:
+			return
+		cached_file_name = self.imagehandler.get_path_to_page()
+		archive_file_name = re.sub('/tmp/mcomix[^/]*/', '', cached_file_name)
+
+		os.remove(cached_file_name)
+		os.system("zip \"%s\" --delete \"%s\"" % (self.filehandler.get_current_file(), archive_file_name))
+
+		self.filehandler.open_file(self.filehandler.get_current_file())
+
+
 
     def flip_page(self, step, single_step=False):
 

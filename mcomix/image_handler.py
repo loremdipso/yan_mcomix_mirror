@@ -188,6 +188,7 @@ class ImageHandler(object):
             return self._window.filehandler.get_path_to_base()
         return self.get_path_to_page()
 
+
     def cleanup(self):
         """Run clean-up tasks. Should be called prior to exit."""
 
