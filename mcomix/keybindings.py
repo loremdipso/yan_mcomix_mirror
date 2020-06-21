@@ -46,6 +46,8 @@ BINDING_INFO = {
     'previous_page_singlestep': { 'title': _('Previous page (always one page)'), 'group': _('Navigation') },
     'next_page_singlestep': { 'title': _('Next page (always one page)'), 'group': _('Navigation') },
 
+    'delete_page' : { 'title' : _('Delete page'), 'group' : _('Navigation') },
+
     'first_page' : { 'title': _('First page'), 'group': _('Navigation') },
     'last_page' : { 'title': _('Last page'), 'group': _('Navigation') },
     'go_to' : { 'title': _('Go to page'), 'group': _('Navigation') },
