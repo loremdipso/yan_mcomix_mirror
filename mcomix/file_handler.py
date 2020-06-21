@@ -39,6 +39,8 @@ class FileHandler(object):
         #: None if current file is not an archive, or unrecognized format.
         self.archive_type = None
 
+        self._to_delete = {}
+
         #: Either path to the current archive, or first file in image list.
         #: This is B{not} the path to the currently open page.
         self._current_file = None
@@ -81,6 +83,23 @@ class FileHandler(object):
             else:
                 start_page = 0
             self.open_file(current_file, start_page, keep_fileprovider=True)
+
+    def delete_file(self, archive_file_name):
+		if archive_file_name in self._to_delete and self._to_delete[archive_file_name]:
+			print "undeleting %s" % (archive_file_name)
+			self._to_delete[archive_file_name] = False
+		else:
+			print "deleting %s" % (archive_file_name)
+			self._to_delete[archive_file_name] = True
+
+    def _actually_delete_files(self):
+		to_delete = [path for (path, value) in self._to_delete.items() if value]
+		print "actually deleting %d files..." % (len(to_delete))
+		if len(to_delete) > 0:
+			print to_delete
+			to_delete_str = " ".join(["\"%s\"" % (path) for path in to_delete])
+			os.system("zip \"%s\" --delete %s" % (self.get_current_file(), to_delete_str))
+			self._to_delete.clear()
 
     def open_file(self, path, start_page=0, keep_fileprovider=False):
         """Open the file pointed to by <path>.
@@ -201,6 +220,8 @@ class FileHandler(object):
     def _close(self, close_provider=False):
         """Run tasks for "closing" the currently opened file(s)."""
         if self.file_loaded or self.file_loading:
+            self._actually_delete_files()
+
             if close_provider:
                 self._file_provider = None
             self.update_last_read_page()

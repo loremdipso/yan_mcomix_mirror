@@ -614,8 +614,8 @@ class MainWindow(gtk.Window):
         self.thumbnailsidebar.load_thumbnails()
         self._update_page_information()
 
-    def set_page(self, num, at_bottom=False):
-        if num == self.imagehandler.get_current_page():
+    def set_page(self, num, at_bottom=False, force_set=False):
+        if (not force_set) and num == self.imagehandler.get_current_page():
             return
         self.imagehandler.set_page(num)
         self.page_changed()
@@ -659,10 +659,15 @@ class MainWindow(gtk.Window):
 		cached_file_name = self.imagehandler.get_path_to_page()
 		archive_file_name = re.escape(re.sub('/tmp/mcomix[^/]*/', '', cached_file_name))
 
-		os.remove(cached_file_name)
-		os.system("zip \"%s\" --delete \"%s\"" % (self.filehandler.get_current_file(), archive_file_name))
+		self.filehandler.delete_file(archive_file_name)
+		self.imagehandler.delete_file(self.imagehandler.get_current_page())
 
-		self.filehandler.open_file(self.filehandler.get_current_file())
+		current_page = self.imagehandler.get_current_page()
+		number_of_pages = self.imagehandler.get_number_of_pages()
+		new_page = current_page
+		#new_page = current_page + 1
+		if new_page <= number_of_pages:
+			self.set_page(new_page, force_set=True)
 
 
 

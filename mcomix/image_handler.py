@@ -31,6 +31,8 @@ class ImageHandler(object):
         #: Reference to main window
         self._window = window
 
+        self._to_delete = {}
+
         #: Caching thread
         self._thread = WorkerThread(self._cache_pixbuf, name='image',
                                     sort_orders=True)
@@ -73,6 +75,10 @@ class ImageHandler(object):
                 pixbuf = self._raw_pixbufs[index]
             except Exception:
                 pass
+
+        print(self._to_delete)
+        if index in self._to_delete and self._to_delete[index]:
+            return image_tools.MISSING_IMAGE_ICON
 
         return pixbuf
 
@@ -188,6 +194,15 @@ class ImageHandler(object):
             return self._window.filehandler.get_path_to_base()
         return self.get_path_to_page()
 
+    def delete_file(self, index):
+		index -= 1 # weird off by one stuff, don't worry about it
+		if index in self._to_delete and self._to_delete[index]:
+			print "undeleting %s" % (index)
+			self._to_delete[index] = False
+		else:
+			print "deleting %s" % (index)
+			self._to_delete[index] = True
+
 
     def cleanup(self):
         """Run clean-up tasks. Should be called prior to exit."""
@@ -201,6 +216,7 @@ class ImageHandler(object):
         self._current_image_index = None
         self._available_images.clear()
         self._raw_pixbufs.clear()
+        self._to_delete.clear()
         self._cache_pages = prefs['max pages to cache']
 
     def page_is_available(self, page=None):
