@@ -32,6 +32,7 @@ class ImageHandler(object):
         self._window = window
 
         self._to_delete = {}
+        self._pixelated_pixbufs = {}
 
         #: Caching thread
         self._thread = WorkerThread(self._cache_pixbuf, name='image',
@@ -76,9 +77,13 @@ class ImageHandler(object):
             except Exception:
                 pass
 
-        print(self._to_delete)
         if index in self._to_delete and self._to_delete[index]:
-            return image_tools.MISSING_IMAGE_ICON
+			if not index in self._pixelated_pixbufs:
+				print "doing the slow thing..."
+				pixbuf = pixbuf.copy()
+				pixbuf.saturate_and_pixelate(pixbuf, 0.8, True)
+				self._pixelated_pixbufs[index] = pixbuf
+			pixbuf = self._pixelated_pixbufs[index]
 
         return pixbuf
 
@@ -217,6 +222,7 @@ class ImageHandler(object):
         self._available_images.clear()
         self._raw_pixbufs.clear()
         self._to_delete.clear()
+        self._pixelated_pixbufs.clear()
         self._cache_pages = prefs['max pages to cache']
 
     def page_is_available(self, page=None):

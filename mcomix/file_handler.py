@@ -88,15 +88,17 @@ class FileHandler(object):
 		if archive_file_name in self._to_delete and self._to_delete[archive_file_name]:
 			print "undeleting %s" % (archive_file_name)
 			self._to_delete[archive_file_name] = False
+			return False
 		else:
 			print "deleting %s" % (archive_file_name)
 			self._to_delete[archive_file_name] = True
+			return True
 
     def _actually_delete_files(self):
 		to_delete = [path for (path, value) in self._to_delete.items() if value]
 		print "actually deleting %d files..." % (len(to_delete))
+		# TODO: ask if the user actually wants to delete those files
 		if len(to_delete) > 0:
-			print to_delete
 			to_delete_str = " ".join(["\"%s\"" % (path) for path in to_delete])
 			os.system("zip \"%s\" --delete %s" % (self.get_current_file(), to_delete_str))
 			self._to_delete.clear()

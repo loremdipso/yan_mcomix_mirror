@@ -659,16 +659,15 @@ class MainWindow(gtk.Window):
 		cached_file_name = self.imagehandler.get_path_to_page()
 		archive_file_name = re.escape(re.sub('/tmp/mcomix[^/]*/', '', cached_file_name))
 
-		self.filehandler.delete_file(archive_file_name)
+		did_delete = self.filehandler.delete_file(archive_file_name)
 		self.imagehandler.delete_file(self.imagehandler.get_current_page())
 
 		current_page = self.imagehandler.get_current_page()
 		number_of_pages = self.imagehandler.get_number_of_pages()
 		new_page = current_page
-		#new_page = current_page + 1
+		if did_delete: new_page += 1
 		if new_page <= number_of_pages:
 			self.set_page(new_page, force_set=True)
-
 
 
     def flip_page(self, step, single_step=False):
