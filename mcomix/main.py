@@ -657,7 +657,7 @@ class MainWindow(gtk.Window):
 		if not self.filehandler.file_loaded:
 			return
 		cached_file_name = self.imagehandler.get_path_to_page()
-		archive_file_name = re.sub('/tmp/mcomix[^/]*/', '', cached_file_name)
+		archive_file_name = re.escape(re.sub('/tmp/mcomix[^/]*/', '', cached_file_name))
 
 		os.remove(cached_file_name)
 		os.system("zip \"%s\" --delete \"%s\"" % (self.filehandler.get_current_file(), archive_file_name))
