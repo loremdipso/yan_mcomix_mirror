@@ -678,7 +678,7 @@ class MainWindow(gtk.Window):
         new_page = current_page
         if did_delete:
             new_page += 1
-        if new_page <= number_of_pages:
+        if new_page > number_of_pages:
             new_page -= 1
         self.set_page(new_page, force_set=True)
 
