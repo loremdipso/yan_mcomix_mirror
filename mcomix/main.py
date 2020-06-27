@@ -676,11 +676,15 @@ class MainWindow(gtk.Window):
         current_page = self.imagehandler.get_current_page()
         number_of_pages = self.imagehandler.get_number_of_pages()
         new_page = current_page
-        if did_delete:
-            new_page += 1
-        if new_page > number_of_pages:
-            new_page -= 1
+        # actually, let's don't advance, see if that helps
+        # if did_delete:
+        #     new_page += 1
+        # if new_page > number_of_pages:
+        #     new_page -= 1
         self.set_page(new_page, force_set=True)
+
+    def split_images():
+        print "yoyoyo"
 
     def flip_page(self, step, single_step=False):
 
@@ -754,6 +758,7 @@ class MainWindow(gtk.Window):
         self.draw_image()
 
     def change_double_page(self, toggleaction):
+        self.split_images()
         prefs['default double page'] = toggleaction.get_active()
         self._update_page_information()
         self.draw_image()

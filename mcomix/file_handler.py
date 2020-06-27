@@ -65,7 +65,8 @@ class FileHandler(object):
         #: Provides a list of available files/archives in the open directory.
         self._file_provider = None
         #: Keeps track of the last read page in archives
-        self.last_read_page = last_read_page.LastReadPage(backend.LibraryBackend())
+        self.last_read_page = last_read_page.LastReadPage(
+            backend.LibraryBackend())
         #: Regexp used for determining which archive files are images.
         self._image_re = image_tools.SUPPORTED_IMAGE_REGEX
         #: Regexp used for determining which archive files are comment files.
@@ -77,7 +78,8 @@ class FileHandler(object):
     def refresh_file(self, *args, **kwargs):
         """ Closes the current file(s)/archive and reloads them. """
         if self.file_loaded:
-            current_file = os.path.abspath(self._window.imagehandler.get_real_path())
+            current_file = os.path.abspath(
+                self._window.imagehandler.get_real_path())
             if self.archive_type is not None:
                 start_page = self._window.imagehandler.get_current_page()
             else:
@@ -85,23 +87,25 @@ class FileHandler(object):
             self.open_file(current_file, start_page, keep_fileprovider=True)
 
     def delete_file(self, archive_file_name):
-		if archive_file_name in self._to_delete and self._to_delete[archive_file_name]:
-			print "undeleting %s" % (archive_file_name)
-			self._to_delete[archive_file_name] = False
-			return False
-		else:
-			print "deleting %s" % (archive_file_name)
-			self._to_delete[archive_file_name] = True
-			return True
+        if archive_file_name in self._to_delete and self._to_delete[archive_file_name]:
+            print "undeleting %s" % (archive_file_name)
+            self._to_delete[archive_file_name] = False
+            return False
+        else:
+            print "deleting %s" % (archive_file_name)
+            self._to_delete[archive_file_name] = True
+            return True
 
     def _actually_delete_files(self):
-		to_delete = [path for (path, value) in self._to_delete.items() if value]
-		print "actually deleting %d files..." % (len(to_delete))
-		# TODO: ask if the user actually wants to delete those files
-		if len(to_delete) > 0:
-			to_delete_str = " ".join(["\"%s\"" % (path) for path in to_delete])
-			os.system("zip \"%s\" --delete %s" % (self.get_current_file(), to_delete_str))
-			self._to_delete.clear()
+        to_delete = [path for (path, value)
+                     in self._to_delete.items() if value]
+        print "actually deleting %d files..." % (len(to_delete))
+        # TODO: ask if the user actually wants to delete those files
+        if len(to_delete) > 0:
+            to_delete_str = " ".join(["\"%s\"" % (path) for path in to_delete])
+            os.system("zip \"%s\" --delete %s" %
+                      (self.get_current_file(), to_delete_str))
+            self._to_delete.clear()
 
     def open_file(self, path, start_page=0, keep_fileprovider=False):
         """Open the file pointed to by <path>.
@@ -175,7 +179,8 @@ class FileHandler(object):
                 self.file_available(self.filelist)
                 # Set current page to current file.
                 if self._current_file in self.filelist:
-                    current_image_index = self.filelist.index(self._current_file)
+                    current_image_index = self.filelist.index(
+                        self._current_file)
                 else:
                     current_image_index = 0
             else:
@@ -274,7 +279,7 @@ class FileHandler(object):
             # A single file was passed - use Comix' classic open mode
             # and open all files in its directory.
             if self._file_provider is None or not keep_fileprovider:
-                self._file_provider = file_provider.get_file_provider([ path ])
+                self._file_provider = file_provider.get_file_provider([path])
 
             return path
 
@@ -305,8 +310,8 @@ class FileHandler(object):
         self._base_path = path
         try:
             self._condition = self._extractor.setup(self._base_path,
-                                                self._tmp_dir,
-                                                self.archive_type)
+                                                    self._tmp_dir,
+                                                    self.archive_type)
         except Exception:
             self._condition = None
             raise
@@ -319,18 +324,18 @@ class FileHandler(object):
 
         files = self._extractor.get_files()
         archive_images = [image for image in files
-            if self._image_re.search(image)
-            # Remove MacOS meta files from image list
-            and not u'__MACOSX' in os.path.normpath(image).split(os.sep)]
+                          if self._image_re.search(image)
+                          # Remove MacOS meta files from image list
+                          and not u'__MACOSX' in os.path.normpath(image).split(os.sep)]
 
         self._sort_archive_images(archive_images)
-        image_files = [ os.path.join(self._tmp_dir, f)
-                        for f in archive_images ]
+        image_files = [os.path.join(self._tmp_dir, f)
+                       for f in archive_images]
 
         comment_files = filter(self._comment_re.search, files)
         tools.alphanumeric_sort(comment_files)
-        self._comment_files = [ os.path.join(self._tmp_dir, f)
-                                for f in comment_files ]
+        self._comment_files = [os.path.join(self._tmp_dir, f)
+                               for f in comment_files]
 
         self._name_table = dict(zip(image_files, archive_images))
         self._name_table.update(zip(self._comment_files, comment_files))
@@ -380,16 +385,16 @@ class FileHandler(object):
         read_date = self.last_read_page.get_date(path)
 
         dialog = message_dialog.MessageDialog(self._window, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO,
-            gtk.BUTTONS_YES_NO)
+                                              gtk.BUTTONS_YES_NO)
         dialog.set_default_response(gtk.RESPONSE_YES)
         dialog.set_should_remember_choice('resume-from-last-read-page',
-            (gtk.RESPONSE_YES, gtk.RESPONSE_NO))
+                                          (gtk.RESPONSE_YES, gtk.RESPONSE_NO))
         dialog.set_text(
             (_('Continue reading from page %d?') % last_read_page),
             _('You stopped reading here on %(date)s, %(time)s. '
-            'If you choose "Yes", reading will resume on page %(page)d. Otherwise, '
-            'the first page will be loaded.') % {'date': read_date.date().strftime("%x"),
-                'time': read_date.time().strftime("%X"), 'page': last_read_page})
+              'If you choose "Yes", reading will resume on page %(page)d. Otherwise, '
+              'the first page will be loaded.') % {'date': read_date.date().strftime("%x"),
+                                                   'time': read_date.time().strftime("%X"), 'page': last_read_page})
         result = dialog.run()
 
         return result == gtk.RESPONSE_YES
@@ -416,18 +421,16 @@ class FileHandler(object):
         if self.archive_type is None:
             # No file numbers for images.
             return 0, 0
-        file_list = self._file_provider.list_files(file_provider.FileProvider.ARCHIVES)
+        file_list = self._file_provider.list_files(
+            file_provider.FileProvider.ARCHIVES)
         if self._current_file in file_list:
             current_index = file_list.index(self._current_file)
         else:
             current_index = 0
         return current_index + 1, len(file_list)
 
-
     def get_current_file(self):
-		return self._current_file
-
-
+        return self._current_file
 
     def get_number_of_comments(self):
         """Return the number of comments in the current archive."""
@@ -490,9 +493,11 @@ class FileHandler(object):
         """
         if self.archive_type is not None:
 
-            files = self._file_provider.list_files(file_provider.FileProvider.ARCHIVES)
+            files = self._file_provider.list_files(
+                file_provider.FileProvider.ARCHIVES)
             absolute_path = os.path.abspath(self._base_path)
-            if absolute_path not in files: return
+            if absolute_path not in files:
+                return
             current_index = files.index(absolute_path)
 
             for path in files[current_index + 1:]:
@@ -510,9 +515,11 @@ class FileHandler(object):
         """
         if self.archive_type is not None:
 
-            files = self._file_provider.list_files(file_provider.FileProvider.ARCHIVES)
+            files = self._file_provider.list_files(
+                file_provider.FileProvider.ARCHIVES)
             absolute_path = os.path.abspath(self._base_path)
-            if absolute_path not in files: return
+            if absolute_path not in files:
+                return
             current_index = files.index(absolute_path)
 
             for path in reversed(files[:current_index]):
@@ -666,7 +673,7 @@ class FileHandler(object):
 
             path = self._window.imagehandler.get_real_path()
             page_index = self._window.imagehandler.get_current_page() - 1
-            current_file_info = [ path, page_index ]
+            current_file_info = [path, page_index]
 
             cPickle.dump(current_file_info, config, cPickle.HIGHEST_PROTOCOL)
             config.close()
@@ -687,7 +694,7 @@ class FileHandler(object):
 
             except Exception, ex:
                 log.error(_('! Corrupt preferences file "%s", deleting...'),
-                        constants.FILEINFO_PICKLE_PATH )
+                          constants.FILEINFO_PICKLE_PATH)
                 log.info(u'Error was: %s', ex)
                 if config is not None:
                     config.close()
