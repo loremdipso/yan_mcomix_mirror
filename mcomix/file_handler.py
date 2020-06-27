@@ -2,12 +2,14 @@
 from __future__ import with_statement
 
 import os
+import sys
 import shutil
 import tempfile
 import threading
 import re
 import cPickle
 import gtk
+import subprocess
 
 from mcomix.preferences import prefs
 from mcomix import archive_extractor
@@ -40,6 +42,7 @@ class FileHandler(object):
         self.archive_type = None
 
         self._to_delete = {}
+        self._did_split = False
 
         #: Either path to the current archive, or first file in image list.
         #: This is B{not} the path to the currently open page.
@@ -95,6 +98,71 @@ class FileHandler(object):
             print "deleting %s" % (archive_file_name)
             self._to_delete[archive_file_name] = True
             return True
+
+    def should_split_images(self):
+        return not self._did_split
+
+    def split_images(self):
+        if self._did_split:
+            print "Already split, yo"
+            return
+
+        # NOTE: this can happen on startup
+        if len(self._name_table) == 0:
+            return
+
+        self._did_split = True
+
+        filenames = [k for k in self._name_table]
+
+        # TODO: hyper unreliable
+        exe_name = os.path.join(os.path.dirname(sys.argv[0]), "bins", "comic_splitter")
+
+        if not os.path.exists(exe_name):
+            print base + " doesn't exist!"
+            return
+
+
+        print(exe_name)
+        output_dirname = os.path.dirname(filenames[0])
+
+        # print filenames
+        print "Splitting at %s..." % (output_dirname)
+        subprocess.call([exe_name, "-output", output_dirname, "-delete"] + filenames)
+
+        # prefix = os.path.basename(output_dirname)
+        # prefix = os.path.basename(output_dirname)
+        # print prefix
+        prefix = output_dirname
+        files = [os.path.join(prefix, f) for f in os.listdir(output_dirname) if os.path.isfile(os.path.join(output_dirname, f))]
+
+        archive_images = [image for image in files
+                          if self._image_re.search(image)
+                          # Remove MacOS meta files from image list
+                          and not u'__MACOSX' in os.path.normpath(image).split(os.sep)]
+
+
+        self._sort_archive_images(archive_images)
+
+        image_files = [os.path.join(self._tmp_dir, f) for f in archive_images]
+
+        comment_files = filter(self._comment_re.search, files)
+        tools.alphanumeric_sort(comment_files)
+        self._comment_files = [os.path.join(self._tmp_dir, f)
+                               for f in comment_files]
+
+        self._name_table = dict(zip(files, archive_images))
+        self._name_table.update(zip(self._comment_files, comment_files))
+
+
+        # self.file_available(self.filelist, True)
+
+        self._archive_opened(image_files)
+        self.filelist = files
+        self._window.imagehandler._available_images = set(range(0, len(image_files)))
+        self._window.imagehandler._image_files = image_files
+        # self._extractor.set_files(archive_images + comment_files)
+        return True
 
     def _actually_delete_files(self):
         to_delete = [path for (path, value)
@@ -174,7 +242,7 @@ class FileHandler(object):
             self._window.osd.show(msg)
 
         else:
-            if self.archive_type is None:
+            if self.archive_type is None or self._did_split: # mta - split is special case
                 # If no extraction is required, mark all files as available.
                 self.file_available(self.filelist)
                 # Set current page to current file.
@@ -200,7 +268,7 @@ class FileHandler(object):
 
             self._window.set_page(current_image_index + 1)
 
-            if self.archive_type is not None:
+            if self.archive_type is not None and not self._did_split:
                 self._extractor.extract()
                 if last_image_index != current_image_index and \
                    self._ask_goto_last_read_page(self._current_file, last_image_index + 1):
@@ -240,6 +308,7 @@ class FileHandler(object):
             self.archive_type = None
             self._current_file = None
             self._base_path = None
+            self._did_split = False
             self._stop_waiting = True
             self._comment_files = []
             self._name_table.clear()
@@ -602,7 +671,7 @@ class FileHandler(object):
             return False
 
     @callback.Callback
-    def file_available(self, filepaths):
+    def file_available(self, filepaths, skip=False):
         """ Called every time a new file from the Filehandler's opened
         files becomes available. C{filepaths} is a list of now available files.
         """
@@ -632,6 +701,9 @@ class FileHandler(object):
         if self.archive_type == None or path == None:
             return
 
+        # if self._did_split:
+        #     return
+
         try:
             name = self._name_table[path]
             with self._condition:
@@ -646,6 +718,9 @@ class FileHandler(object):
         """
         if self.archive_type == None:
             return
+
+        # if self._did_split:
+        #     return
 
         with self._condition:
             extractor_files = self._extractor.get_files()

@@ -151,6 +151,7 @@ class ImageHandler(object):
     def set_page(self, page_num):
         """Set up filehandler to the page <page_num>.
         """
+        print page_num
         assert 0 < page_num <= self.get_number_of_pages()
         self._current_image_index = page_num - 1
         self.do_cacheing()
@@ -265,16 +266,22 @@ class ImageHandler(object):
         if priority is not None:
             self._thread.append_order((priority, index))
 
-    def _file_available(self, filepaths):
+    def _file_available(self, filepaths, skip=False):
         """ Called by the filehandler when a new file becomes available. """
         # Find the page that corresponds to <filepath>
         if not self._image_files:
             return
 
+        if skip: return
         available = sorted(filepaths)
         for i, imgpath in enumerate(self._image_files):
             if tools.bin_search(available, imgpath) >= 0:
                 self.page_available(i + 1)
+
+    def invalidate_cache(self):
+        # TODO: is this all we need to do?
+        self._thread.clear_orders()
+        self.cleanup()
 
     def get_number_of_pages(self):
         """Return the number of pages in the current archive/directory."""
@@ -452,9 +459,13 @@ class ImageHandler(object):
         log.debug('Ask for priority extraction around page %u: %s',
                   page, ' '.join([str(n + 1) for n in page_list]))
 
+
+        # print self._available_images
         for index in page_list:
             if index not in self._available_images:
+                # print "Why? %s" % (index)
                 files.append(self._image_files[index])
+
 
         if len(files) > 0:
             self._window.filehandler._ask_for_files(files)

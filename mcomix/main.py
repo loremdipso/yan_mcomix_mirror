@@ -683,8 +683,12 @@ class MainWindow(gtk.Window):
         #     new_page -= 1
         self.set_page(new_page, force_set=True)
 
-    def split_images():
-        print "yoyoyo"
+    def split_images(self, do_split):
+        if do_split:
+             if self.filehandler.should_split_images():
+                # self.imagehandler.invalidate_cache()
+                self.filehandler.split_images()
+                # self.set_page(1, force_set=True)
 
     def flip_page(self, step, single_step=False):
 
@@ -758,7 +762,7 @@ class MainWindow(gtk.Window):
         self.draw_image()
 
     def change_double_page(self, toggleaction):
-        self.split_images()
+        self.split_images(toggleaction.get_active())
         prefs['default double page'] = toggleaction.get_active()
         self._update_page_information()
         self.draw_image()
