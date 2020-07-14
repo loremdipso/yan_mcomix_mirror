@@ -1,5 +1,6 @@
 """main.py - Main window."""
 
+import socket
 import os
 import shutil
 import threading
@@ -36,7 +37,52 @@ from mcomix import tools
 from mcomix import layout
 from mcomix import log
 import math
+import multiprocessing
 import operator
+
+
+import fcntl
+import sys
+
+
+def instance_already_running(label="default"):
+    """
+    Detect if an an instance with the label is already running, globally
+    at the operating system level.
+
+    Using `os.open` ensures that the file pointer won't be closed
+    by Python's garbage collector after the function's scope is exited.
+
+    The lock will be released when the program exits, or could be
+    released if the file pointer were closed.
+    """
+
+    lock_file_pointer = os.open("/tmp/instance_%s.lock" %
+                                (label), os.O_WRONLY | os.O_CREAT)
+
+    try:
+        fcntl.lockf(lock_file_pointer, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        already_running = False
+    except IOError:
+        already_running = True
+
+    return already_running
+
+
+serversocket = None
+g_socket = 8088
+# TODO
+
+if instance_already_running("mcomix"):
+    print("Already running; exiting")
+    if len(sys.argv) > 1:
+        print("buf first...")
+        serversocket = socket.socket()
+        serversocket.connect(('localhost', g_socket))
+        serversocket.send(sys.argv[1].encode())
+        serversocket.shutdown(socket.SHUT_RDWR)
+        serversocket.close()
+    sys.exit()
 
 
 class MainWindow(gtk.Window):
@@ -276,6 +322,20 @@ class MainWindow(gtk.Window):
 
         prefs['previous quit was quit and save'] = False
 
+        global serversocket
+        serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serversocket.bind(('localhost', g_socket))
+        # become a server socket, maximum 5 connections
+        serversocket.listen(5)
+
+        self.__serverThread = threading.Thread(
+            target=self.listen_at_socket)
+        self.__serverThread.daemon = True
+        # self.__serverThread = multiprocessing.Process(
+        # target=self.listen_at_socket)
+        self.__serverThread.start()
+
         if open_path is not None:
             self.filehandler.open_file(open_path)
 
@@ -297,6 +357,26 @@ class MainWindow(gtk.Window):
 
     def gained_focus(self, *args):
         self.was_out_of_focus = False
+
+    def listen_at_socket(self):
+        global serversocket
+        while True:
+            try:
+                connection, _ = serversocket.accept()
+            except Exception as err:
+                return
+            buf = connection.recv(1000).strip()
+            if len(buf) > 0:
+                buf = unicode(buf, "utf-8")
+                print(buf)
+                if os.path.exists(buf):
+                    print("opening...")
+                    self.filehandler.open_file(buf)
+
+    def stop_listen_at_socket(self):
+        global serversocket
+        serversocket.shutdown(socket.SHUT_RDWR)
+        serversocket.close()
 
     def lost_focus(self, *args):
         self.was_out_of_focus = True
@@ -685,7 +765,7 @@ class MainWindow(gtk.Window):
 
     def split_images(self, do_split):
         if do_split:
-             if self.filehandler.should_split_images():
+            if self.filehandler.should_split_images():
                 # self.imagehandler.invalidate_cache()
                 self.filehandler.split_images()
                 # self.set_page(1, force_set=True)
@@ -1205,6 +1285,9 @@ class MainWindow(gtk.Window):
         if main_dialog._dialog is not None:
             main_dialog._dialog.close()
         backend.LibraryBackend().close()
+
+        # self.__serverThread.terminate()
+        self.stop_listen_at_socket()
 
         # This hack is to avoid Python issue #1856.
         for thread in threading.enumerate():
