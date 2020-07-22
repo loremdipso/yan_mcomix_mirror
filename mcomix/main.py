@@ -843,8 +843,8 @@ class MainWindow(gtk.Window):
 
     def change_double_page(self, toggleaction):
         self.split_images(toggleaction.get_active())
-        prefs['default double page'] = toggleaction.get_active()
-        self._update_page_information()
+        #prefs['default double page'] = toggleaction.get_active()
+        # self._update_page_information()
         self.draw_image()
 
     def change_manga_mode(self, toggleaction):
